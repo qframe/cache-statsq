@@ -5,24 +5,27 @@ import (
 	"github.com/zpatrick/go-config"
 	"github.com/qnib/qframe-types"
 	"github.com/qnib/statsq/lib"
+	"github.com/qframe/types/constants"
+	"github.com/qframe/types/plugin"
+	"github.com/qframe/types/messages"
 )
 
 const (
 	version   = "0.1.3"
-	pluginTyp = qtypes.CACHE
+	pluginTyp = qtypes_constants.CACHE
 	pluginPkg = "statsq"
 )
 
 type Plugin struct {
-	qtypes.Plugin
+	*qtypes_plugin.Plugin
 	Statsq statsq.StatsQ
 }
 
 
-func New(qChan qtypes.QChan, cfg *config.Config, name string) (Plugin, error) {
-	p := qtypes.NewNamedPlugin(qChan, cfg, pluginTyp, pluginPkg, name, version)
+func New(b qtypes_plugin.Base, name string) (Plugin, error) {
+	p := qtypes_plugin.NewNamedPlugin(b, pluginTyp, pluginPkg, name, version)
 	sdName := fmt.Sprintf("%s.%s", pluginTyp, name)
-	sd := statsq.NewNamedStatsQ(sdName, cfg, p.QChan)
+	sd := statsq.NewNamedStatsQ(sdName, p.Cfg, p.QChan)
 	return Plugin{Plugin: p,Statsq: sd}, nil
 }
 
@@ -35,9 +38,9 @@ func (p *Plugin) Run() {
 		select {
 		case val := <-dc.Read:
 			switch val.(type) {
-			case qtypes.Message:
-				msg := val.(qtypes.Message)
-				if p.StopProcessingMessage(msg, false) {
+			case qtypes_messages.Message:
+				msg := val.(qtypes_messages.Message)
+				if msg.StopProcessing(p.Plugin, false) {
 					continue
 				}
 				p.Log("debug", fmt.Sprintf("Received Message: %s %v", msg.Message))
